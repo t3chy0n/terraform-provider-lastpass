@@ -86,26 +86,11 @@ func (blob *Blob) Parse(session *dto.Session) (map[string]*dto.Account, error) {
 
 		case "AACT":
 			// Handle the "AACT" chunk
-			println("Parse app")
-			//_, err := dto.ParseApp(chunk, key)
-			//if err != nil {
-			//	return nil, fmt.Errorf("failed to parse share: %v", err)
-			//}
-			//shares := append(shares, lastShare)
+			println("Parse app - unsupported ")
 
-		//	if code != 'FFCF' and codePrev == 'FFCF' and vaultDict['LPFF']:
-		//	vaultDict['LPFF'][-1]['Custom Fields'] = json.dumps(collection, ensure_ascii=False)
-		//	collection = []
-		//elif code not in ('ACFL', 'ACOF') and codePrev in ('ACFL', 'ACOF') and vaultDict['ACCT']:
-		//vaultDict['ACCT'][-1]['Form Fields'] = json.dumps(collection, ensure_ascii=False)
-		//collection = []
 		case "TMPL":
 			//Here are json formated custom templates
-			println("Parsing custom templates")
-
-		//Encrypted private key same as in session
-		case "PRIK":
-			println("Parsing private key")
+			println("Parsing custom templates - unsupported")
 
 		case "ATTA":
 			attachment, err := dto.ParseAttachment(chunk, session.PrivateKey)
