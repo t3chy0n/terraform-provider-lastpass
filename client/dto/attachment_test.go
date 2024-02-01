@@ -2,7 +2,7 @@ package dto
 
 import (
 	"encoding/hex"
-	"last-pass-poc/client/encryption"
+	"last-pass/client/encryption"
 	"reflect"
 	"testing"
 )

@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
-	"last-pass-poc/client/kdf"
+	"last-pass/client/kdf"
 	"reflect"
 	"testing"
 )

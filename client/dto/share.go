@@ -2,8 +2,8 @@ package dto
 
 import (
 	"errors"
-	"last-pass-poc/client/encryption"
-	"last-pass-poc/client/kdf"
+	"last-pass/client/encryption"
+	"last-pass/client/kdf"
 )
 
 type Share struct {

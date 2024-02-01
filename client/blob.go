@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"last-pass-poc/client/dto"
-	"last-pass-poc/client/encryption"
+	"last-pass/client/dto"
+	"last-pass/client/encryption"
 	"strconv"
 )
 

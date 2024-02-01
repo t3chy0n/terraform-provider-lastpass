@@ -3,7 +3,7 @@ package dto
 import (
 	"encoding/binary"
 	"errors"
-	"last-pass-poc/client/encryption"
+	"last-pass/client/encryption"
 )
 
 type Item struct {

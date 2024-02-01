@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"last-pass-poc/client/client_errors"
-	"last-pass-poc/client/dto"
+	"last-pass/client/client_errors"
+	"last-pass/client/dto"
 	"net/http"
 )
 
@@ -21,7 +21,7 @@ func (lpassClient *LastPassClient) GetCustomTypes(ctx context.Context) ([]dto.Cu
 	}
 	cookies := lpassClient.getSessionCookies()
 	headers := http.Header{}
-	headers.Add("x-csrf-token", lpassClient.session.CSRFToken)
+	headers.Add("x-csrf-token", lpassClient.Session.CSRFToken)
 
 	rawRes, err := lpassClient.makeRequest(
 		ctx,
@@ -52,7 +52,7 @@ func (lpassClient *LastPassClient) AddCustomType(ctx context.Context, customType
 	}
 	cookies := lpassClient.getSessionCookies()
 	headers := http.Header{}
-	headers.Add("x-csrf-token", lpassClient.session.CSRFToken)
+	headers.Add("x-csrf-token", lpassClient.Session.CSRFToken)
 
 	rawRes, err := lpassClient.makeRequest(
 		ctx,
@@ -89,7 +89,7 @@ func (lpassClient *LastPassClient) DeleteCustomType(ctx context.Context, customT
 
 	cookies := lpassClient.getSessionCookies()
 	headers := http.Header{}
-	headers.Add("x-csrf-token", lpassClient.session.CSRFToken)
+	headers.Add("x-csrf-token", lpassClient.Session.CSRFToken)
 
 	_, err = lpassClient.makeRequest(
 		ctx,

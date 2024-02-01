@@ -2,7 +2,7 @@ package dto
 
 import (
 	"fmt"
-	"last-pass-poc/client/encryption"
+	"last-pass/client/encryption"
 )
 
 type Account struct {
@@ -175,7 +175,7 @@ func WithDatabase(data AccountDatabaseFields) AccountOption {
 		acc.NoteType = NOTE_TYPE_DATABASE
 		acc.Url = "http://sn"
 		acc.Note = fmt.Sprintf("NoteType:%s\nLanguage:en-US\nType:%s\nHostname:%s\nPort:%s\nDatabase:%s\nUsername:%s\nPassword:%s\nSID:%s\nAlias:%s\nNotes:%s",
-			NOTE_TYPE_SERVER,
+			NOTE_TYPE_DATABASE,
 			data.Type,
 			data.Hostname,
 			data.Port,

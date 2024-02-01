@@ -3,8 +3,8 @@ package examples
 import (
 	"context"
 	"fmt"
-	"last-pass-poc/client"
-	"last-pass-poc/client/dto"
+	"last-pass/client"
+	"last-pass/client/dto"
 	"log"
 	"os"
 )

@@ -8,10 +8,10 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"last-pass-poc/client/client_errors"
-	"last-pass-poc/client/dto"
-	"last-pass-poc/client/encryption"
-	"last-pass-poc/client/kdf"
+	"last-pass/client/client_errors"
+	"last-pass/client/dto"
+	"last-pass/client/encryption"
+	"last-pass/client/kdf"
 	"math/rand"
 	"net/url"
 	"strconv"
@@ -106,7 +106,7 @@ func (lpassClient *LastPassClient) login(username string) (*dto.Session, error) 
 	const multiFactorResponseFailed = "multifactorresponsefailed"
 
 	if response == nil {
-		return nil, fmt.Errorf("Couldn't login to Lastpass.")
+		return nil, fmt.Errorf("Couldn't login to Lastpass. %v (Response) %v", err, string(res))
 	}
 	if response.Error != nil && response.Error.Cause == outOfBandRequired {
 		parameters.Set("outofbandrequest", "1")
@@ -147,7 +147,7 @@ func (lpassClient *LastPassClient) login(username string) (*dto.Session, error) 
 		return nil, fmt.Errorf("Error during request. %s, errCode: %s", response.Error.Message, response.Error.Cause)
 	}
 
-	lpassClient.session = response.Ok
+	lpassClient.Session = response.Ok
 	if lpassClient.trust {
 
 		cookies := lpassClient.getSessionCookies()
@@ -167,23 +167,23 @@ func (lpassClient *LastPassClient) login(username string) (*dto.Session, error) 
 	}
 
 	decryptedPrivateKey, err := encryption.CipherDecryptPrivateKey(
-		lpassClient.session.PrivateKey,
+		lpassClient.Session.PrivateKey,
 		lpassClient.KDFDecryptionKey,
 	)
 
 	if err != nil {
 		fmt.Println("Problem with decrypting private key:", err)
 	}
-	lpassClient.session.PrivateKey = decryptedPrivateKey
-	lpassClient.session.KDFLoginKey = lpassClient.KDFLoginKey
-	lpassClient.session.KDFDecryptionKey = lpassClient.KDFDecryptionKey
+	lpassClient.Session.PrivateKey = decryptedPrivateKey
+	lpassClient.Session.KDFLoginKey = lpassClient.KDFLoginKey
+	lpassClient.Session.KDFDecryptionKey = lpassClient.KDFDecryptionKey
 
 	return response.Ok, err
 }
 
-// Checks validity of session
+// Checks validity of Session
 func (lpassClient *LastPassClient) IsLoggedIn(ctx context.Context) (bool, error) {
-	if lpassClient.session == nil || lpassClient.session.Token == "" {
+	if lpassClient.Session == nil || lpassClient.Session.Token == "" {
 		return false, nil
 	}
 
@@ -201,7 +201,7 @@ func (lpassClient *LastPassClient) IsLoggedIn(ctx context.Context) (bool, error)
 
 	response, err := xmlParse[dto.LastPassResponse[dto.LoginCheck]](res)
 	if err != nil {
-		fmt.Println("Problem with validating current session:", err)
+		fmt.Println("Problem with validating current Session:", err)
 		return false, err
 	}
 
@@ -209,7 +209,7 @@ func (lpassClient *LastPassClient) IsLoggedIn(ctx context.Context) (bool, error)
 }
 
 // Return and parse encrypted vault data.
-func (lpassClient *LastPassClient) GetBlob(ctx context.Context) (map[string]*dto.Account, error) {
+func (lpassClient *LastPassClient) GetBlob(ctx context.Context) (*Blob, error) {
 	parameters := url.Values{
 		"mobile":                              []string{"1"},
 		"includesharedfolderformfillprofiles": []string{"1"},
@@ -227,9 +227,7 @@ func (lpassClient *LastPassClient) GetBlob(ctx context.Context) (map[string]*dto
 		return nil, err
 	}
 
-	var blob = Blob{Data: res}
-
-	return blob.Parse(lpassClient.session)
+	return &Blob{Data: res}, nil
 }
 
 // Returns blob version
@@ -267,7 +265,7 @@ func (lpassClient *LastPassClient) upsert(ctx context.Context, acct *dto.Account
 		return nil, &client_errors.Authentication{"client not logged in"}
 	}
 
-	key := lpassClient.session.KDFDecryptionKey
+	key := lpassClient.Session.KDFDecryptionKey
 
 	if acct.IsShared() {
 		key = acct.Share.Key
@@ -302,7 +300,7 @@ func (lpassClient *LastPassClient) upsert(ctx context.Context, acct *dto.Account
 		"ajax":        []string{"1"},
 		"extjs":       []string{"1"},
 		"sessonly":    []string{"0"},
-		"token":       []string{lpassClient.session.Token},
+		"token":       []string{lpassClient.Session.Token},
 		"method":      []string{"cr"},
 		"requestsrc:": []string{"cr"},
 		"pwprotect":   []string{"off"},
@@ -394,7 +392,7 @@ func (lpassClient *LastPassClient) updateAccountFields(ctx context.Context, acct
 	fieldData := url.Values{
 		"aid":    []string{acct.Id},
 		"update": []string{"1"},
-		"token":  []string{lpassClient.session.Token},
+		"token":  []string{lpassClient.Session.Token},
 		"method": []string{"cli"},
 	}
 
@@ -418,7 +416,7 @@ func (lpassClient *LastPassClient) updateAccountFieldsWithNewStructure(ctx conte
 		"ref":          []string{acct.Url},
 		"updatefields": []string{"1"},
 		"auto":         []string{"1"},
-		"token":        []string{lpassClient.session.Token},
+		"token":        []string{lpassClient.Session.Token},
 		"method":       []string{"cli"},
 	}
 
@@ -531,7 +529,7 @@ func (lpassClient *LastPassClient) Delete(ctx context.Context, acct *dto.Account
 	data := url.Values{
 		"extjs":  []string{"1"},
 		"delete": []string{"1"},
-		"token":  []string{lpassClient.session.Token},
+		"token":  []string{lpassClient.Session.Token},
 		"aid":    []string{acct.Id},
 	}
 	if acct.IsShared() && acct.Share.ReadOnly {

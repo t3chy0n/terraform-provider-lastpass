@@ -2,7 +2,7 @@ package dto
 
 import (
 	"encoding/hex"
-	"last-pass-poc/client/kdf"
+	"last-pass/client/kdf"
 	"reflect"
 	"testing"
 )

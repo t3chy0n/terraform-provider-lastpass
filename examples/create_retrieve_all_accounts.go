@@ -3,7 +3,7 @@ package examples
 import (
 	"context"
 	"fmt"
-	"last-pass-poc/client"
+	"last-pass/client"
 	"log"
 	"os"
 )
@@ -23,7 +23,9 @@ func mainExample1() {
 		client.WithTrust(),
 	)
 
-	accounts, err := lastPassClient.GetBlob(ctx)
+	blob, err := lastPassClient.GetBlob(ctx)
+
+	accounts, err := blob.Parse(lastPassClient.Session)
 	for _, acc := range accounts {
 		if len(acc.Attachments) > 0 {
 

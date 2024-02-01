@@ -4,19 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"last-pass-poc/client/client_errors"
-	_ "last-pass-poc/client/client_errors"
-	"last-pass-poc/client/dto"
-	"last-pass-poc/client/kdf"
+	"last-pass/client/client_errors"
+	_ "last-pass/client/client_errors"
+	"last-pass/client/dto"
+	"last-pass/client/kdf"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"runtime"
 	"strings"
+	"time"
 )
 
 // MaxLoginRetries determines the maximum number of login retries
@@ -52,7 +54,7 @@ const (
 
 type LastPassClient struct {
 	httpClient *http.Client
-	session    *dto.Session
+	Session    *dto.Session
 	logger     *Logger
 
 	ctx        *context.Context
@@ -99,9 +101,9 @@ func NewClient(username string, masterPassword string, opts ...ClientOption) (*L
 		return nil, err
 	}
 
-	client.session = currentSession
+	client.Session = currentSession
 
-	client.session.CSRFToken, err = client.getCSRFToken()
+	client.Session.CSRFToken, err = client.getCSRFToken()
 	if err != nil {
 		return nil, err
 	}
@@ -212,38 +214,69 @@ func (lpassClient *LastPassClient) makeRequest(ctx context.Context, path string,
 	if lpassClient.ctx != nil {
 		ctx = *lpassClient.ctx
 	}
-	// Create a new request
-	req, err := http.NewRequestWithContext(ctx, "POST", lpassClient.BaseUrl+path, strings.NewReader(""))
-	if lpassClient.ctx != nil {
-		req.WithContext(*lpassClient.ctx)
-	}
-	lpassClient.log("%s %s\n", req.Method, req.URL)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, opt := range opts {
-		opt(req)
-	}
-
-	// Set the User-Agent header
-	req.Header.Set("User-Agent", "LastPass-CLI/")
 
 	// Send the request
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
 
-	// Read the response body
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
+	maxRetries := 8
+	retryDelay := 3 * time.Second // Start with a 1-second delay
+	maxDelay := time.Minute       // Maximum delay between retries
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		client := &http.Client{}
+
+		// Create a new request
+		req, err := http.NewRequestWithContext(ctx, "POST", lpassClient.BaseUrl+path, strings.NewReader(""))
+		if lpassClient.ctx != nil {
+			req.WithContext(context.Background())
+		}
+		lpassClient.log("%s %s\n", req.Method, req.URL)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, opt := range opts {
+			opt(req)
+		}
+
+		// Set the User-Agent header
+		req.Header.Set("User-Agent", "LastPass-CLI/")
+
+		resp, err := client.Do(req)
+		if err != nil {
+			lpassClient.log("HTTP request failed: %v", err)
+			return nil, err
+		}
+
+		if resp.StatusCode != http.StatusTooManyRequests {
+			lpassClient.log(fmt.Sprintf("Response code: %s", resp.Status))
+			if err != nil {
+				return nil, err
+			}
+
+			// Read the response body
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+
+			return body, nil
+		}
+
+		// If we received a 429, wait and retry
+		lpassClient.log("Received 429, retrying after %v", retryDelay)
+		time.Sleep(retryDelay)
+
+		// Exponential backoff with a max delay limit
+		retryDelay *= 2
+		if retryDelay > maxDelay {
+			retryDelay = maxDelay
+		}
+
+		// Important: Close the previous response's body to avoid leaking resources
+		resp.Body.Close()
 	}
 
-	return body, nil
+	return nil, errors.New("Request failed too many times.")
 
 }
 
@@ -257,14 +290,14 @@ func xmlParse[TRes any](rawResponse []byte) (*TRes, error) {
 }
 
 func (lpassClient *LastPassClient) getSessionCookies() map[string]string {
-	if lpassClient.session == nil {
+	if lpassClient.Session == nil {
 		return map[string]string{}
 	}
 	return map[string]string{
-		"PHPSESSID": lpassClient.session.SessionID,
+		"PHPSESSID": lpassClient.Session.SessionID,
 	}
 }
 
 func (lpassClient *LastPassClient) IsAuthenticated() bool {
-	return lpassClient.session != nil
+	return lpassClient.Session != nil
 }
