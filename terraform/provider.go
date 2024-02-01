@@ -57,7 +57,7 @@ func Provider() *schema.Provider {
 
 func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	logger := log.New(os.Stderr, "LastPass Client"+d.Get("username").(string)+d.Get("password").(string), log.LstdFlags)
+	logger := log.New(os.Stderr, "LastPass Client Test", log.LstdFlags)
 
 	var lastPassClient, err = client.NewClient(
 		d.Get("username").(string),
