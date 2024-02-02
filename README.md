@@ -1,4 +1,4 @@
-# LastPass Client Library for Go
+# LastPass Go Client and Terraform provider
 
 The LastPass Client Library provides an interface to interact with LastPass accounts programmatically using Go. It allows for operations such as creating new accounts, attaching files, and retrieving account information.
 
