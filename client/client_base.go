@@ -115,7 +115,6 @@ func setupClient(opts ...ClientOption) (*LastPassClient, error) {
 	c := &LastPassClient{
 		BaseUrl: LAST_PASS_SERVER,
 	}
-	var err error
 
 	for _, opt := range opts {
 		opt(c)
@@ -130,20 +129,22 @@ func setupClient(opts ...ClientOption) (*LastPassClient, error) {
 		}
 	}
 
-	c.trustId, err = kdf.CalculateTrustID(false)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := c.calculateTrustLabel(); err != nil {
-		return nil, err
-	}
 	return c, nil
 }
 
 func WithTrust() ClientOption {
 	return func(c *LastPassClient) {
 		c.trust = true
+	}
+}
+func WithTrustId(id string) ClientOption {
+	return func(c *LastPassClient) {
+		c.trustId = id
+	}
+}
+func WithTrustLabel(label string) ClientOption {
+	return func(c *LastPassClient) {
+		c.trustLabel = label
 	}
 }
 func WithContext(ctx *context.Context) ClientOption {

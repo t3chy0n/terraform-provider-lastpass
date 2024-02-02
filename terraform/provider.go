@@ -3,6 +3,7 @@ package terraform
 import (
 	"context"
 	"last-pass/client"
+	"last-pass/client/kdf"
 	"last-pass/vault"
 	"log"
 	"os"
@@ -30,26 +31,35 @@ func Provider() *schema.Provider {
 			"username": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "Lastpass login e-mail",
+				Description: "Lastpass username/e-email",
 				DefaultFunc: schema.EnvDefaultFunc("LASTPASS_USER", nil),
 			},
 			"password": {
 				Type:        schema.TypeString,
 				Required:    true,
 				Sensitive:   true,
-				Description: "Lastpass login password",
+				Description: "Lastpass password",
 				DefaultFunc: schema.EnvDefaultFunc("LASTPASS_PASSWORD", nil),
 			},
-			//"trust_id": {
-			//	Type:        schema.TypeString,
-			//	Required:    true,
-			//	Sensitive:   true,
-			//	Description: "Trusted id, associated with a that will be trusted after successful login",
-			//	DefaultFunc: func() (interface{}, error) {
-			//		return "ASDASD", nil
-			//	},
-			//	//schema.EnvDefaultFunc("LASTPASS_TRUST_ID", nil),
-			//},
+			"trust_id": {
+				Type:        schema.TypeString,
+				Required:    false,
+				Optional:    true,
+				Sensitive:   true,
+				Description: "Trusted id, associated with a that will be trusted after successful login. When empty, random id will be generated.",
+				DefaultFunc: func() (interface{}, error) {
+					return kdf.CalculateTrustID(true)
+				},
+			},
+			"trust_label": {
+				Type:        schema.TypeString,
+				Required:    false,
+				Optional:    true,
+				Description: "Trusted label, associated with a that will be trusted after successful login",
+				DefaultFunc: func() (interface{}, error) {
+					return "Terraform client", nil
+				},
+			},
 		},
 		ConfigureContextFunc: providerConfigure,
 	}
@@ -62,6 +72,8 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 	var lastPassClient, err = client.NewClient(
 		d.Get("username").(string),
 		d.Get("password").(string),
+		client.WithTrustId(d.Get("trust_id").(string)),
+		client.WithTrustLabel(d.Get("trust_label").(string)),
 		client.WithLogger(logger),
 		client.WithTrust(),
 	)

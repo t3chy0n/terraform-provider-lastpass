@@ -12,6 +12,7 @@ import (
 	"last-pass/client/dto"
 	"last-pass/client/encryption"
 	"last-pass/client/kdf"
+	"last-pass/config"
 	"math/rand"
 	"net/url"
 	"strconv"
@@ -79,6 +80,10 @@ func (lpassClient *LastPassClient) GetAttachmentData(ctx context.Context, attach
 // Authenticates a user. It will do out of band authentication, it only works well
 // with 2fa providers which offer push notifications to mobile - LastPass and Duo Security
 func (lpassClient *LastPassClient) login(username string) (*dto.Session, error) {
+
+	if existingSession := config.GetCachedSession(username); existingSession != nil {
+		return existingSession, nil
+	}
 
 	loginStartTime := time.Now()
 	ctx := context.Background()
@@ -148,17 +153,14 @@ func (lpassClient *LastPassClient) login(username string) (*dto.Session, error) 
 	}
 
 	lpassClient.Session = response.Ok
+
+	config.CacheSession(username, lpassClient.Session)
+
 	if lpassClient.trust {
 
-		cookies := lpassClient.getSessionCookies()
-		trustForm := url.Values{
-			"token":      []string{response.Ok.Token},
-			"uuid":       []string{lpassClient.trustId},
-			"trustlabel": []string{lpassClient.trustLabel},
-		}
-
-		if _, err := lpassClient.makeRequest(ctx, EndpointTrust, WithUrlParams(trustForm), WithCookies(cookies)); err != nil {
-			return nil, err
+		session, err2 := lpassClient.AddTrustedDevice(ctx, lpassClient.trustId, lpassClient.trustLabel, response.Ok.Token)
+		if err2 != nil {
+			return session, err2
 		}
 	}
 
@@ -179,6 +181,20 @@ func (lpassClient *LastPassClient) login(username string) (*dto.Session, error) 
 	lpassClient.Session.KDFDecryptionKey = lpassClient.KDFDecryptionKey
 
 	return response.Ok, err
+}
+
+func (lpassClient *LastPassClient) AddTrustedDevice(ctx context.Context, id string, label string, token string) (*dto.Session, error) {
+	cookies := lpassClient.getSessionCookies()
+	trustForm := url.Values{
+		"token":      []string{token},
+		"uuid":       []string{id},
+		"trustlabel": []string{label},
+	}
+
+	if _, err := lpassClient.makeRequest(ctx, EndpointTrust, WithUrlParams(trustForm), WithCookies(cookies)); err != nil {
+		return nil, err
+	}
+	return nil, nil
 }
 
 // Checks validity of Session
