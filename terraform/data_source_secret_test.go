@@ -21,6 +21,10 @@ func TestAccDataSourceSecret_Basic(t *testing.T) {
 						"data.lastpass_secret.foobar", "password", "hunter2"),
 					resource.TestCheckResourceAttr(
 						"data.lastpass_secret.foobar", "note", "secret note"),
+					resource.TestCheckResourceAttr(
+						"data.lastpass_secret.foobar2", "note", "secret note"),
+					resource.TestCheckResourceAttr(
+						"data.lastpass_secret.foobar3", "note", "secret note"),
 				),
 			},
 		},
@@ -36,4 +40,12 @@ resource "lastpass_secret" "foobar" {
 }
 data "lastpass_secret" "foobar" {
     id = lastpass_secret.foobar.id
-}`
+}
+data "lastpass_secret" "foobar2" {
+    name = lastpass_secret.foobar.name
+}
+data "lastpass_secret" "foobar3" {
+    fullname = lastpass_secret.foobar.fullname
+}
+
+`

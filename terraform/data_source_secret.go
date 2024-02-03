@@ -3,6 +3,7 @@ package terraform
 import (
 	"context"
 	"errors"
+	"last-pass/client/dto"
 	"last-pass/vault"
 	"strconv"
 
@@ -17,14 +18,22 @@ func DataSourceSecret() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"id": {
 				Type:     schema.TypeString,
-				Required: true,
+				Required: false,
+				Optional: true,
+				Computed: true,
 			},
 			"name": {
-				Type:     schema.TypeString,
+				Type: schema.TypeString,
+
+				Required: false,
+				Optional: true,
 				Computed: true,
 			},
 			"fullname": {
-				Type:     schema.TypeString,
+				Type: schema.TypeString,
+
+				Required: false,
+				Optional: true,
 				Computed: true,
 			},
 			"username": {
@@ -70,12 +79,36 @@ func DataSourceSecret() *schema.Resource {
 func DataSourceSecretRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	vault := m.(*vault.LastPassVault)
 	var diags diag.Diagnostics
-	id := d.Get("id").(string)
-	if _, err := strconv.Atoi(id); err != nil {
-		err := errors.New("Not a valid Lastpass ID")
-		return diag.FromErr(err)
+	id, idIsOk := d.GetOk("id")
+	if idIsOk {
+		if _, err := strconv.Atoi(id.(string)); err != nil {
+			err := errors.New("Not a valid Lastpass ID")
+			return diag.FromErr(err)
+		}
 	}
-	account, err := vault.GetAccount(ctx, id)
+
+	account, err := vault.GetAccount(ctx,
+		func(acc *dto.Account) bool {
+			return idIsOk && acc.Id == id.(string)
+
+		},
+		func(acc *dto.Account) bool {
+			if fullname, ok := d.GetOk("fullname"); ok {
+
+				return acc.FullName == fullname.(string)
+			}
+			return false
+
+		},
+		func(acc *dto.Account) bool {
+			if name, ok := d.GetOk("name"); ok {
+
+				return acc.Name == name.(string)
+			}
+			return false
+
+		},
+	)
 	if err != nil {
 		return diag.FromErr(err)
 	}

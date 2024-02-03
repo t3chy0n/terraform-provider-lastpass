@@ -98,7 +98,7 @@ func ResourceSecretCreate(ctx context.Context, d *schema.ResourceData, m interfa
 func ResourceSecretRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	vault := m.(*vault.LastPassVault)
 	var diags diag.Diagnostics
-	account, err := vault.GetAccount(ctx, d.Id())
+	account, err := vault.GetAccountById(ctx, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -158,7 +158,7 @@ func ResourceSecretImporter(ctx context.Context, d *schema.ResourceData, m inter
 		return nil, err
 	}
 	vault := m.(*vault.LastPassVault)
-	account, err := vault.GetAccount(ctx, d.Id())
+	account, err := vault.GetAccountById(ctx, d.Id())
 	if err != nil {
 		return nil, err
 	}

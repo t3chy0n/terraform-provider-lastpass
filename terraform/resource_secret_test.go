@@ -49,7 +49,7 @@ func testAccResourceSecretDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		secret, _ := c.GetAccount(context.Background(), rs.Primary.ID)
+		secret, _ := c.GetAccountById(context.Background(), rs.Primary.ID)
 		if secret != nil {
 			return fmt.Errorf("Secret still exists")
 		}
@@ -67,7 +67,7 @@ func testAccResourceSecretExists(n string, secret *dto.Account) resource.TestChe
 			return fmt.Errorf("No Secret ID is set")
 		}
 		c := TestAccProvider.Meta().(*vault.LastPassVault)
-		account, err := c.GetAccount(context.Background(), rs.Primary.ID)
+		account, err := c.GetAccountById(context.Background(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}

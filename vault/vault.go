@@ -37,7 +37,9 @@ func NewLastPassVault(client *client.LastPassClient) *LastPassVault {
 	return vault
 }
 
-func (lpassVault *LastPassVault) GetAccount(ctx context.Context, id string) (*dto.Account, error) {
+type AccountPredicate func(c *dto.Account) bool
+
+func (lpassVault *LastPassVault) GetAccount(ctx context.Context, predicates ...AccountPredicate) (*dto.Account, error) {
 	var err error
 
 	mutex.Lock()
@@ -58,12 +60,20 @@ func (lpassVault *LastPassVault) GetAccount(ctx context.Context, id string) (*dt
 		return nil, err
 	}
 	for _, acc := range accounts {
-		if acc.Id == id {
-			return acc, nil
+		for _, predicate := range predicates {
+			if predicate(acc) {
+				return acc, nil
+			}
 		}
 
 	}
 	return nil, nil
+}
+
+func (lpassVault *LastPassVault) GetAccountById(ctx context.Context, id string) (*dto.Account, error) {
+	return lpassVault.GetAccount(ctx, func(acc *dto.Account) bool {
+		return acc.Id == id
+	})
 }
 
 func (lpassVault *LastPassVault) WriteAccount(ctx context.Context, account *dto.Account) error {
