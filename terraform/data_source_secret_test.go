@@ -49,3 +49,86 @@ data "lastpass_secret" "foobar3" {
 }
 
 `
+
+func TestAccDataSourceSecret_LookupByName(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: TestAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDataSourceSecretConfig_lookupbyname,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						"data.lastpass_secret.foobar_lookup", "name", "terraform-provider-lastpass datasource lookupbyname test"),
+					resource.TestCheckResourceAttr(
+						"data.lastpass_secret.foobar_lookup", "username", "gopher"),
+					resource.TestCheckResourceAttr(
+						"data.lastpass_secret.foobar_lookup", "password", "hunter2"),
+					resource.TestCheckResourceAttr(
+						"data.lastpass_secret.foobar_lookup", "note", "secret note"),
+				),
+			},
+		},
+	})
+}
+
+const testAccDataSourceSecretConfig_lookupbyname = `
+resource "lastpass_secret" "foobar_lookup" {
+    name = "terraform-provider-lastpass datasource lookupbyname test"
+    username = "gopher"
+    password = "hunter2"
+    note = "secret note"
+}
+
+data "lastpass_secret" "foobar_lookup" {
+    name = "terraform-provider-lastpass datasource lookupbyname test"
+	depends_on = [
+		lastpass_secret.foobar_lookup
+	]
+}
+
+`
+
+func TestAccDataSourceSecret_LookupByGroupAndName(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: TestAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDataSourceSecretConfig_lookupbynameandgroup,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						"data.lastpass_secret.foobar_lookup", "name", "terraform-provider-lastpass"),
+					resource.TestCheckResourceAttr(
+						"data.lastpass_secret.foobar_lookup", "group", "testgroup"),
+					resource.TestCheckResourceAttr(
+						"data.lastpass_secret.foobar_lookup", "fullname", "testgroup\\terraform-provider-lastpass"),
+					resource.TestCheckResourceAttr(
+						"data.lastpass_secret.foobar_lookup", "username", "gopher"),
+					resource.TestCheckResourceAttr(
+						"data.lastpass_secret.foobar_lookup", "password", "hunter2"),
+					resource.TestCheckResourceAttr(
+						"data.lastpass_secret.foobar_lookup", "note", "secret note"),
+				),
+			},
+		},
+	})
+}
+
+const testAccDataSourceSecretConfig_lookupbynameandgroup = `
+resource "lastpass_secret" "foobar_lookup" {
+	group = "testgroup"
+    name = "terraform-provider-lastpass"
+    username = "gopher"
+    password = "hunter2"
+    note = "secret note"
+}
+
+data "lastpass_secret" "foobar_lookup" {
+    name = "testgroup\\terraform-provider-lastpass"
+	depends_on = [
+		lastpass_secret.foobar_lookup
+	]
+}
+
+`

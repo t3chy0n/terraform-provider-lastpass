@@ -53,6 +53,7 @@ func ResourceSecret() *schema.Resource {
 			},
 			"group": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 			"url": {

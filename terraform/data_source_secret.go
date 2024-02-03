@@ -3,6 +3,7 @@ package terraform
 import (
 	"context"
 	"errors"
+	"fmt"
 	"last-pass/client/dto"
 	"last-pass/vault"
 	"strconv"
@@ -18,23 +19,16 @@ func DataSourceSecret() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"id": {
 				Type:     schema.TypeString,
-				Required: false,
 				Optional: true,
-				Computed: true,
 			},
 			"name": {
 				Type: schema.TypeString,
 
-				Required: false,
 				Optional: true,
-				Computed: true,
 			},
 			"fullname": {
-				Type: schema.TypeString,
-
-				Required: false,
+				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 			},
 			"username": {
 				Type:     schema.TypeString,
@@ -55,7 +49,7 @@ func DataSourceSecret() *schema.Resource {
 			},
 			"group": {
 				Type:     schema.TypeString,
-				Computed: true,
+				Optional: true,
 			},
 			"url": {
 				Type:     schema.TypeString,
@@ -94,16 +88,25 @@ func DataSourceSecretRead(ctx context.Context, d *schema.ResourceData, m interfa
 		},
 		func(acc *dto.Account) bool {
 			if fullname, ok := d.GetOk("fullname"); ok {
-
 				return acc.FullName == fullname.(string)
 			}
 			return false
 
 		},
 		func(acc *dto.Account) bool {
-			if name, ok := d.GetOk("name"); ok {
+			group, groupOk := d.GetOk("group")
+			name, nameOk := d.GetOk("name")
 
-				return acc.Name == name.(string)
+			if groupOk && !nameOk {
+				return false
+			}
+			if groupOk && nameOk && len(group.(string)) > 0 {
+				return acc.FullName == fmt.Sprintf("%s\\%s", group.(string), name.(string))
+			}
+
+			if nameOk {
+
+				return acc.FullName == fmt.Sprintf("%s", name.(string))
 			}
 			return false
 
@@ -114,8 +117,7 @@ func DataSourceSecretRead(ctx context.Context, d *schema.ResourceData, m interfa
 	}
 
 	if account == nil {
-		d.SetId("0")
-		return diags
+		return diag.FromErr(errors.New("Secret could not be found!"))
 	}
 
 	d.SetId(account.Id)
