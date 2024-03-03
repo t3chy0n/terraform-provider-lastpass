@@ -24,11 +24,14 @@ checksum:
 signs:
   - artifacts: checksum
     args:
-      - "--batch"
+      - "--pinentry-mode"
+      - "loopback"
       - "--local-user"
       - "{{ .Env.GPG_FINGERPRINT }}"
       - "--output"
       - "${signature}"
+      - "--passphrase"
+      - "{{ .Env.GPG_PASSPHRASE }}"
       - "--detach-sign"
       - "${artifact}"
 changelog:
